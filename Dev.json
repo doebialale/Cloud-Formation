@@ -1,0 +1,50 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+    },
+    "Mappings": {
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "DevUserdata": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+
+            "DisableApiTermination": "-",
+            "ImageId": "ami-02e136e904f3da870",
+            "InstanceType": "t2.micro",
+
+            "SecurityGroupIds" : ["sg-0dcd72a4fc5211d3f"],
+
+            "UserData": {
+                "Fn::Base64": {
+                    "Fn::Join": [
+                        "",
+                        [
+                          "#!/bin/bash\n",
+                          "yum update -y\n",
+                          "yum install httpd -y\n",
+                          "cd /var/www/html \n",
+                          "echo 'TodayThe Awesome JJTech ReInvent Batch students are now studying Route53 and will explore all the routing policies including failover based routing and simple based routing policies' > index.html \n",
+                          "service httpd start\n",
+                          "chkconfig httpd on"
+                        ]
+                    ]
+                }
+            }
+    }
+            }
+
+    },
+    "Outputs": {
+
+    }
+}

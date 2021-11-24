@@ -1,0 +1,45 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+    },
+    "Mappings": {
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "NAT" : {
+        "Type" : "AWS::EC2::NatGateway",
+        "Properties" : {
+        "AllocationId" : { "Fn::GetAtt" : ["EIP", "AllocationId"]},
+        "SubnetId" : [{"Fn::ImportValue" : "appPublicSnID"}],
+        "Tags" : [ {"Key" : "Name", "Value" : "NatGW" } ]
+     }
+    },
+    "EIP" : {
+      "DependsOn" : "NAT",
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+      "Domain" : "vpc"
+   }
+    },
+    "Route" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+      "RouteTableId" : { "Ref" : "RouteTable" },
+      "DestinationCidrBlock" : "0.0.0.0/0",
+      "NatGatewayId" : { "Ref" : "NAT" }
+   }
+  }
+
+    },
+    "Outputs": {
+
+    }
+}

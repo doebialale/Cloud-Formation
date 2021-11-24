@@ -1,0 +1,94 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+      "EnvType": {
+          "Description": "Select the Env you wish to create your resource(s)",
+          "Type": "String",
+          "AllowedValues": ["prod", "stg", "test"]
+      }
+
+    },
+    "Mappings": {
+      "Regions": {
+                "us-east-1": {
+                  "prod": "ami-02e136e904f3da870",
+                  "test": "ami-0b0af3577fe5e3532",
+                  "stg": "ami-09e67e426f25ce0d7"
+                }
+      }
+
+
+    },
+    "Conditions": {
+      "CreateProdResources": {
+        "Fn::Equals" : [{ "Ref": "EnvType" }, "prod"]
+      },
+      "CreateTestResources": {
+        "Fn::Equals" : [{ "Ref": "EnvType" }, "test"]
+      }
+
+    },
+    "Resources": {
+      "myInstance": {
+        "Condition":"CreateProdResources",
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+            "SubnetId": { "Fn::ImportValue" : "my-privateSubnet1-id" },
+            "SecurityGroupIds": [{ "Fn::ImportValue" : "my-internalSG-id" }],
+            "ImageId": {"Fn::FindInMap": [
+                "Regions",
+                { "Ref" : "AWS::Region" },
+                { "Ref": "EnvType" }
+            ]},
+            "InstanceType": "t3.micro",
+            "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+
+
+    }
+  },
+      "myInstance2": {
+      "Condition":"CreateTestResources",
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+          "ImageId":{"Fn::FindInMap": [
+              "Regions",
+              { "Ref" : "AWS::Region" },
+              { "Ref": "EnvType" }
+          ]},
+          "InstanceType": "t2.micro",
+          "SubnetId": { "Fn::ImportValue" : "my-privateSubnet2-id" },
+          "SecurityGroupIds":[ { "Fn::ImportValue" : "my-internalSG-id" }],
+          "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+
+  }
+},
+
+"myInstance3": {
+  "Type": "AWS::EC2::Instance",
+  "Properties": {
+    "SubnetId": { "Fn::ImportValue" : "my-publicSubnet1-id" },
+    "SecurityGroupIds": [{ "Fn::ImportValue" : "my-externalSG-id" }],
+      "ImageId":{"Fn::FindInMap": [
+          "Regions",
+          { "Ref" : "AWS::Region" },
+          { "Ref": "EnvType" }
+      ]},
+      "InstanceType": "t2.micro",
+      "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+
+}
+}
+
+
+
+
+
+    },
+    "Outputs": {
+
+    }
+}

@@ -1,0 +1,59 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+    },
+    "Parameters": {
+        "vpccidr": {
+            "Description": "Select VPC CIdR",
+            "Type": "String",
+            "Default": "10.0.0.0/16"
+        },
+        "subnetcidr": {
+            "Description": "Specify Subnet CIDR",
+            "Type": "String",
+            "Default": "10.0.0.0/24"
+        }
+    },
+
+    "Mappings": {},
+    "Conditions": {},
+
+    "Resources": {
+        "Testvpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "vpccidr"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Testvpc"
+                    }
+                ]
+            },
+            "Metadata": {
+            }
+        },
+        "subnetName": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "*",
+                "VpcId": {
+                    "Ref": "Testvpc"
+                },
+                "CidrBlock": { "Ref": "subnetcidr" },
+                "Tags": [
+                    {
+                        "Key": "subnetName",
+                        "Value": "Private"
+                    }
+                ]
+            },
+            "Metadata": {
+            }
+        }
+    },
+    "Outputs": {}
+}

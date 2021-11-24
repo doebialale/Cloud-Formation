@@ -1,0 +1,35 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+    },
+    "Mappings": {
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+        "Onasis": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.2.0.0/16",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "Onsis100"
+            }
+        ]
+      }
+    }
+
+
+    },
+    "Outputs": {
+
+    }
+}

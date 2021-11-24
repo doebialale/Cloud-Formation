@@ -1,0 +1,89 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+      "EnvType": {
+          "Description": "Select the env. to create your resource(s)",
+          "Type": "String",
+          "AllowedValues":[
+            "Prod", "Staging", "Test"
+          ]
+      }
+
+    },
+    "Mappings": {
+      "Regions": {
+                "us-east-1": {
+                  "Prod": "ami-02e136e904f3da870",
+                  "Test": "ami-0b0af3577fe5e3532",
+                  "Staging": "ami-09e67e426f25ce0d7"
+                }
+      }
+    },
+    "Conditions": {
+      "CreateProdResources": {
+        "Fn::Equals" : [{ "Ref": "EnvType"}, "Prod" ]
+      },
+      "CreateTestResources": {
+        "Fn::Equals" : [{ "Ref": "EnvType" }, "Test"]
+      },
+      "CreateStagingResources": {
+        "Fn::Equals" : [{ "Ref": "EnvType" }, "Staging"]
+      }
+    },
+    "Resources": {
+      "myProdInstance": {
+          "Condition":"CreateProdResources",
+          "Type": "AWS::EC2::Instance",
+          "Properties": {
+              "ImageId": {"Fn::FindInMap": [
+                  "Regions",
+                  { "Ref" : "AWS::Region" },
+                  { "Ref": "EnvType" }
+              ]},
+              "InstanceType": "t3.micro",
+              "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+      }
+    },
+      "myTestInstance": {
+          "Condition":"CreateTestResources",
+          "Description": "t2.micro instance for testing. Lives in the Private subnet",
+          "Type": "AWS::EC2::Instance",
+          "Properties": {
+            "SubnetId": {"Fn::ImportValue" : "my-privateSubnet2-id"},
+            "SecurityGroupIds": [{"Fn::ImportValue" : "my-internalSG-id"}],
+            "ImageId":{"Fn::FindInMap": [
+                  "Regions",
+                  { "Ref" : "AWS::Region" },
+                  { "Ref": "EnvType" }
+              ]},
+              "InstanceType": "t2.micro",
+              "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+
+          }
+      },
+      "myStagingInstance": {
+          "Condition":"CreateStagingResources",
+          "Type": "AWS::EC2::Instance",
+          "Description": "t2.micro instance for testing. Lives in the Private subnet",
+          "Properties": {
+              "ImageId":{"Fn::FindInMap": [
+                  "Regions",
+                  { "Ref" : "AWS::Region" },
+                  { "Ref": "EnvType" }
+              ]},
+              "SubnetId": {"Fn::ImportValue" : "my-publicSubnet2-id"},
+              "SecurityGroupIds": [{"Fn::ImportValue" : "my-externalSG-id"}],
+              "InstanceType": "t2.micro",
+              "Tags": [{ "Key": "Name", "Value":  { "Ref": "EnvType" } }]
+
+          }
+      }
+    },
+    "Outputs": {
+
+    }
+}

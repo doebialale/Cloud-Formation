@@ -1,0 +1,293 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This Network is for class use containning 2EC2, 4Subnets (2pub and 2prv) and 3AZs",
+    "Metadata": {
+
+    },
+    "Parameters": {
+      "myVPCCidr": {
+          "Description": "my vpc cidr block",
+          "Type": "String",
+          "Default": "10.0.0.0/16"
+      },
+      "AZ1": {
+          "Description": "The AvailabilityZone1 for my network",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+
+      },
+      "AZ2": {
+          "Description": "The AvailabilityZone2 for my network",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+
+      },
+      "myPrvSubCidr1": {
+          "Description": "My Private subnet1 cidr",
+          "Type": "String",
+          "Default": "10.0.1.0/24"
+      },
+      "myPrvsubCidr2": {
+          "Description": "My Private subnet2 cidr",
+          "Type": "String",
+          "Default": "10.0.3.0/24"
+      },
+      "myPubSubCidr1": {
+          "Description": "My Public subnet1 cidr",
+          "Type": "String",
+          "Default": "10.0.2.0/24"
+      },
+      "myPubSubCidr2": {
+          "Description": "My Public subnet2 cidr",
+          "Type": "String",
+          "Default": "10.0.4.0/24"
+      },
+     "EnvType": {
+            "Description": "Envirnment Types",
+            "Type": "String",
+          "AllowedValues" : ["prod","test"]
+        },
+      "InstanceTypeParameter" : {
+      "Type" : "String",
+      "Default" : "t2.micro",
+      "AllowedValues" : ["t2.micro", "m1.small", "m1.large"],
+      "Description" : "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+      },
+      "Keyname": {
+        "Description": "key pair name",
+        "Type": "AWS::EC2::KeyPair::KeyName"
+
+      }
+
+    },
+    "Mappings": {
+         "Regions": {
+                  "us-east-1": {
+                    "prod": "ami-02e136e904f3da870",
+                    "test": "ami-09e67e426f25ce0d7"
+
+                  },
+                  "us-east-2": {
+                    "prod": "ami-02e136e904f3da870",
+                    "test": "ami-00399ec92321828f5"
+
+
+                  },
+                  "us-west-2": {
+                  "prod": "ami-02e136e904f3da870",
+                  "test": "ami-03d5c68bab01f3496"
+
+                  }
+        }
+
+      },
+    "Conditions": {
+        "CreateProdResources": {
+              "Fn::Equals": [{"Ref": "EnvType"},"prod"]
+          },
+        "CreateTestResources": {
+                "Fn::Equals": [{"Ref": "EnvType"},"test"]
+            }
+    },
+    "Resources": {
+      "myVPC": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+          "CidrBlock": { "Ref": "myVPCCidr" },
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyVPC"}}]
+        }
+      },
+      "myPrvsub1": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "AZ1" },
+          "VpcId": { "Ref": "myVPC" },
+          "CidrBlock": { "Ref": "myPrvSubCidr1" },
+          "Tags":[{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyPrvsub1"}}]
+        }
+      },
+      "myPrvsub2": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone":{ "Ref": "AZ2" },
+          "VpcId": { "Ref": "myVPC" },
+          "CidrBlock": { "Ref": "myPrvsubCidr2" },
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyPrvsub2"}}]
+        }
+      },
+      "myPubSub1": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "AZ1" },
+          "VpcId": { "Ref": "myVPC" },
+          "CidrBlock": { "Ref": "myPubSubCidr1" },
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyPubsub1"}}]
+        }
+      },
+      "myPubSub2": {
+        "Type": "AWS::EC2::Subnet",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "AZ2" },
+          "VpcId": { "Ref": "myVPC" },
+          "CidrBlock": { "Ref": "myPubSubCidr2" },
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyPubsub2"}}]
+        }
+      },
+      "myIGW": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Properties": {
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyIGW"}}]
+        }
+      },
+      "AttachGateway": {
+        "Type": "AWS::EC2::VPCGatewayAttachment",
+        "Properties": {
+          "VpcId":{ "Ref": "myVPC" },
+          "InternetGatewayId": { "Ref": "myIGW" }
+        }
+      },
+      "myPrvRT": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": { "Ref": "myVPC" },
+          "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-MyPrvRT"}}]
+        }
+      },
+      "myPrvrouteTableAssoc1": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "myPrvsub1" },
+          "RouteTableId":{ "Ref": "myPrvRT" }
+        }
+      },
+      "myPrvrouteTableAssoc2": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "myPrvsub2" },
+          "RouteTableId": { "Ref": "myPrvRT" }
+        }
+      },
+      "Eip": {
+        "Type": "AWS::EC2::EIP",
+        "Properties": {
+          "Domain": "vpc"
+        }
+      },
+      "NAT" : {
+          "Type" : "AWS::EC2::NatGateway",
+          "Properties" : {
+             "AllocationId" : { "Fn::GetAtt" : ["Eip", "AllocationId"]},
+             "SubnetId" : { "Ref" : "myPubSub1"},
+             "Tags" :[{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-My-NatGateway"}}]
+            }
+        },
+      "myPrvR": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+      "RouteTableId": { "Ref": "myPrvRT" },
+      "DestinationCidrBlock": "0.0.0.0/0",
+      "NatGatewayId": { "Ref": "NAT" }
+      }
+      },
+      "myPubRT": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": { "Ref": "myVPC" },
+          "Tags": [{ "Key": "Name", "Value":  "My-Pub-RT" }]
+        }
+      },
+      "myPubrouteTableAssoc1": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "myPubSub1" },
+          "RouteTableId": { "Ref": "myPubRT" }
+        }
+      },
+      "myPubrouteTableAssoc2": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "myPubSub2" },
+          "RouteTableId": { "Ref": "myPubRT" }
+        }
+      },
+      "myPubR": {
+        "Type": "AWS::EC2::Route",
+        "Properties": {
+          "RouteTableId": { "Ref": "myPubRT" },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": { "Ref": "myIGW" }
+        }
+      },
+      "mySG" : {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Allow SSH and and HTTP port 22 and 80",
+          "SecurityGroupIngress" : [
+            { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0" },
+            { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"}
+          ],
+          "VpcId" : { "Ref": "myVPC" },
+          "Tags" :  [ { "Key": "Name", "Value":  "My-SG" }]
+        }
+      },
+      "myInternalSG" : {
+         "DependsOn" : "mySG",
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Allow traffic from mySG",
+          "SecurityGroupIngress" : [  { "IpProtocol" : "-1", "SourceSecurityGroupId":{ "Ref": "mySG" } }
+            ],
+          "VpcId" :{ "Ref": "myVPC" },
+          "Tags" :  [{ "Key": "Name", "Value":  "MY-Internal-SG" } ]
+        }
+      },
+      "Ec2Instance1" : {
+      "Type" : "AWS::EC2::Instance",
+      "Condition": "CreateProdResources",
+      "Properties" : {
+      "ImageId" : { "Fn::FindInMap" : [ "Regions", { "Ref" : "AWS::Region" }, { "Ref": "EnvType" } ]},
+      "InstanceType":{ "Ref": "InstanceTypeParameter" },
+      "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-Bastion"}}],
+      "KeyName" : { "Ref" : "Keyname" },
+      "NetworkInterfaces": [ {      "AssociatePublicIpAddress": "true",
+      "DeviceIndex": "0",
+      "GroupSet" : [{ "Ref": "mySG" }],
+      "SubnetId": { "Ref": "myPubSub1" }
+          } ],
+          "UserData": {
+              "Fn::Base64": {
+                  "Fn::Join": [
+                      "",
+                      ["#!/bin/bash\n",
+                     "yum update -y\n",
+                        "yum install httpd -y\n",
+"cd /var/www/html && echo 'JJ Tech Inc Disaster Recovery strategy include using Route53 Failover Based Routing' > index.html\n",
+"service httpd start\n",
+"chkconfig httpd on\n"
+                      ]
+                  ]
+              }
+          }
+        }
+      },
+
+      "Ec2Instance2" : {
+      "Type" : "AWS::EC2::Instance",
+      "Condition": "CreateProdResources",
+      "Properties" : {
+      "ImageId" : { "Fn::FindInMap" : [ "Regions", { "Ref" : "AWS::Region" }, { "Ref": "EnvType" } ]},
+      "InstanceType":{ "Ref": "InstanceTypeParameter" },
+      "Tags": [{ "Key": "Name", "Value": { "Fn::Sub": "${EnvType}-Webserver"}}],
+      "KeyName" : { "Ref" : "Keyname" },
+      "NetworkInterfaces": [ {      "AssociatePublicIpAddress": "true",
+      "DeviceIndex": "0",
+      "GroupSet" : [{ "Ref": "mySG" }],
+      "SubnetId": { "Ref": "myPubSub2" }
+          } ]
+        }
+      }
+
+
+    },
+    "Outputs": {
+
+    }
+}

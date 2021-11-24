@@ -1,0 +1,217 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+      "vpccidr": {
+        "Description": "Cidr for nonprod VPC1",
+        "Type": "String",
+        "Default": "10.1.0.0/16"
+      },
+      "Subnet1Cidr": {
+        "Description": "Cidr for my nonprod VPC1 private subnet A",
+        "Type": "String",
+        "Default": "10.1.1.0/24"
+      },
+      "Subnet2Cidr": {
+        "Description": "Cidr for my nonprod VPC2 private subnet B",
+        "Type": "String",
+        "Default": "10.1.2.0/24"
+      },
+      "Subnet3Cidr": {
+        "Description": "Cidr for my nonprod VPC2 private subnet B",
+        "Type": "String",
+        "Default": "10.1.3.0/24"
+      },
+      "Az1": {
+          "Description": "AvailabilityZone 1 for my network",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+      },
+      "Az2": {
+          "Description": "AvailabilityZone 2 for my network",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+      },
+      "Az3": {
+          "Description": "AvailabilityZone 2 for my network",
+          "Type": "AWS::EC2::AvailabilityZone::Name"
+      },
+      "EnviName": {
+        "Type": "String",
+        "Default": "RDS"
+      },
+      "KeyName": {
+          "Description": "Selet your Security key",
+          "Type": "AWS::EC2::KeyPair::KeyName"
+      }
+
+    },
+    "Mappings": {
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "vpc": {
+        "Type": "AWS::EC2::VPC",
+        "Properties": {
+          "CidrBlock": { "Ref": "vpccidr" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-VPC"} }]
+        }
+      },
+
+      "Publicsubnet": {
+        "Type": "AWS::EC2::Subnet",
+        "DependsOn": "vpc",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "Az1" },
+          "VpcId": { "Ref": "vpc" },
+          "CidrBlock": { "Ref": "Subnet1Cidr" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-Publicsubnet"} }]
+        }
+      },
+      "Privlicsubnet1": {
+        "Type": "AWS::EC2::Subnet",
+        "DependsOn": "vpc",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "Az2" },
+          "VpcId": { "Ref": "vpc" },
+          "CidrBlock": { "Ref": "Subnet2Cidr" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-Privlicsubnet1"} }]
+        }
+      },
+      "Privlicsubnet2": {
+        "Type": "AWS::EC2::Subnet",
+        "DependsOn": "vpc",
+        "Properties": {
+          "AvailabilityZone": { "Ref": "Az3" },
+          "VpcId": { "Ref": "vpc" },
+          "CidrBlock": { "Ref": "Subnet3Cidr" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-Privlicsubnet2"} }]
+        }
+      },
+
+      "IGW": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Properties": {
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-IGW"} }]
+        }
+      },
+      "AttachGateway": {
+        "Type": "AWS::EC2::VPCGatewayAttachment",
+        "DependsOn": "vpc",
+        "Properties": {
+          "VpcId": { "Ref": "vpc" },
+          "InternetGatewayId": { "Ref": "IGW" }
+        }
+      },
+      "EIP": {
+        "Type": "AWS::EC2::EIP",
+        "DependsOn" : "AttachGateway",
+        "Properties": {
+         "Domain": "vpc"
+        }
+      },
+      "NATGW" : {
+       "Type" : "AWS::EC2::NatGateway",
+       "Properties" : {
+         "AllocationId" : { "Fn::GetAtt" : ["EIP", "AllocationId"]},
+          "SubnetId" : { "Ref" : "Publicsubnet"},
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-NATGW"} }]
+        }
+      },
+
+
+      "PublicRT": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": { "Ref": "vpc" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-PublicRT"} }]
+        }
+      },
+      "PrivateRT": {
+        "Type": "AWS::EC2::RouteTable",
+        "Properties": {
+          "VpcId": { "Ref": "vpc" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-PrivateRT"} }]
+        }
+      },
+
+      "PublicsubnetRTassociation": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "Publicsubnet" },
+          "RouteTableId": { "Ref": "PublicRT" }
+        }
+      },
+      "Privatesubnet1RTassociation": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "Privlicsubnet1" },
+          "RouteTableId": { "Ref": "PrivateRT" }
+        }
+      },
+      "Privatesubnet2RTassociation": {
+        "Type": "AWS::EC2::SubnetRouteTableAssociation",
+        "Properties": {
+          "SubnetId": { "Ref": "Privlicsubnet2" },
+          "RouteTableId": { "Ref": "PrivateRT" }
+        }
+      },
+
+      "PublicRoute": {
+        "Type": "AWS::EC2::Route",
+        "Properties": {
+          "RouteTableId": { "Ref": "PublicRT" },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": { "Ref": "IGW" }
+        }
+      },
+      "PrivateRoute": {
+        "Type": "AWS::EC2::Route",
+        "Properties": {
+          "RouteTableId": { "Ref": "PrivateRT" },
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "NatGatewayId": { "Ref": "NATGW" }
+        }
+      },
+
+      "SG" : {
+        "Type" : "AWS::EC2::SecurityGroup",
+        "Properties" : {
+          "GroupDescription" : "Allow ssh and http port 22 and 80",
+          "SecurityGroupIngress" : [
+            { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0" },
+            { "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0" }
+          ],
+          "VpcId" : { "Ref": "vpc" },
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-BastionSG"} }]
+        }
+      },
+
+      "Instance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+          "KeyName": { "Ref": "KeyName" },
+          "ImageId": "ami-02e136e904f3da870",
+          "InstanceType": "t2.micro",
+          "NetworkInterfaces": [ {
+           "AssociatePublicIpAddress": "true",
+           "DeviceIndex" : "0",
+           "SubnetId" : { "Ref": "Publicsubnet" },
+           "GroupSet": [ { "Ref": "SG" } ]
+          } ],
+          "Tags": [{ "Key": "Name", "Value":  { "Fn::Sub": "${EnviName}-Bastion"} }]
+
+        }
+      }
+
+
+    },
+    "Outputs": {
+
+    }
+}

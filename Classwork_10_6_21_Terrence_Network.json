@@ -1,0 +1,227 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "This is a network with 2 subnets, a vpc, and a bunch of resources that makes it work",
+	"Metadata": {
+
+	},
+
+	"Parameters": {
+		"appVpcCidr": {
+			"Description": "Cidr for your VPC",
+			"Type": "String",
+			"Default": "10.0.0.0/16"
+		},
+		"appPriv8SNAZ": {
+			"Description": "AZ for Private subnet",
+			"Type": "AWS::EC2::AvailabilityZone::Name"
+		},
+		"appPublicSNAZ": {
+			"Description": "AZ for public subnet",
+			"Type": "AWS::EC2::AvailabilityZone::Name"
+		},
+		"PrivateCIDR": {
+			"Description": "CIDR for Private Subnet",
+			"Type": "String",
+			"Default": "10.0.1.0/24"
+		},
+		"PublicCIDR": {
+			"Description": "CIDR for Public Subnet",
+			"Type": "String",
+			"Default": "10.0.2.0/24"
+		}
+	},
+
+	"Mappings": {
+
+	},
+
+	"Conditions": {
+
+	},
+
+	"Resources": {
+		"AppVPC": {
+			"Type": "AWS::EC2::VPC",
+			"Properties": {
+				"CidrBlock": {
+					"Ref": "appVpcCidr"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "APP-VPC"
+				}]
+			}
+		},
+		"appPriv8SN": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": {
+					"Ref": "appPriv8SNAZ"
+				},
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"CidrBlock": {
+					"Ref": "PrivateCIDR"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "AppPriv8Subnet"
+				}]
+			}
+		},
+		"appPublicSN": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"AvailabilityZone": {
+					"Ref": "appPublicSNAZ"
+				},
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"CidrBlock": {
+					"Ref": "PublicCIDR"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "AppPublicSN"
+				}]
+			}
+		},
+		"AppVPCIGW": {
+			"Type": "AWS::EC2::InternetGateway",
+			"Properties": {
+				"Tags": [{
+					"Key": "Name",
+					"Value": "AppVPCIGW"
+				}]
+			}
+		},
+		"AttachGateway": {
+			"Type": "AWS::EC2::VPCGatewayAttachment",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"InternetGatewayId": {
+					"Ref": "AppVPCIGW"
+				}
+			}
+		},
+		"AppRT": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "AppRT"
+				}]
+			}
+		},
+		"Routetointernet": {
+			"Type": "AWS::EC2::Route",
+			"Properties": {
+				"RouteTableId": {
+					"Ref": "AppRT"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"GatewayId": {
+					"Ref": "AppVPCIGW"
+				}
+			}
+		},
+		"SubnetRouteTableAssociation": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "appPublicSN"
+				},
+				"RouteTableId": {
+					"Ref": "AppRT"
+				}
+			}
+		},
+		"AppPRT": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "AppPRT"
+				}]
+			}
+		},
+		"PubSG" : {
+		  "Type" : "AWS::EC2::SecurityGroup",
+		  "Properties" : {
+		    "GroupDescription" : "Security group for public SN",
+		    "SecurityGroupIngress" : [
+         {
+            "IpProtocol": "tcp",
+            "CidrIp": "73.77.239.2/32",
+            "FromPort": 22,
+            "ToPort": 22
+         },
+				 {
+						"IpProtocol": "tcp",
+						"CidrIp": "0.0.0.0/0",
+						"FromPort": 80,
+						"ToPort": 80
+				 }
+      ],
+		    "VpcId" : { "Ref": "AppVPC" },
+		    "Tags" :  [ { "Key": "Name", "Value":  "AppPubSG" } ]
+		  }
+		},
+
+		"NAT" : {
+			"Type" : "AWS::EC2::NatGateway",
+			"Properties" : {
+			"AllocationId" : { "Fn::GetAtt" : ["EIP", "AllocationId"]},
+			"SubnetId" : { "Ref": "appPublicSN" },
+			"Tags" : [ {"Key" : "Name", "Value" : "NatGW" } ]
+	 		}
+		},
+		"EIP" : {
+		"Type" : "AWS::EC2::EIP",
+		"Properties" : {
+			"Domain" : "vpc"
+ 		}
+		},
+		"Route" : {
+		"Type" : "AWS::EC2::Route",
+		"Properties" : {
+		"RouteTableId" : { "Ref" : "AppPRT" },
+		"DestinationCidrBlock" : "0.0.0.0/0",
+		"NatGatewayId" : { "Ref" : "NAT" }
+ }
+}
+	},
+	"Outputs": {
+		"AppVPcID" : {
+		  "Value" : { "Ref": "AppVPC" },
+			"Export" : { "Name": "App-VPC-ID" }
+		},
+		"appPublicSnID" : {
+		  "Value" : { "Ref": "appPublicSN" },
+			"Export" : {"Name" : "Public-SN-ID"}
+		},
+		"PubSGID" : {
+		  "Value" : { "Ref": "PubSG" },
+			"Export" : {"Name" : "PubSGID"}
+		},
+		"InternetGatewayId" : {
+		  "Value" : { "Ref": "AppVPCIGW" },
+			"Export" : {"Name" : "InternetGatewayId"}
+		},
+		"appPublicSNAZ" : {
+		  "Value" : { "Fn::GetAtt" : [ "appPublicSN", "AvailabilityZone" ]},
+			"Export" : {"Name" : "Public-SN-AZ"}
+		}
+
+	}
+}

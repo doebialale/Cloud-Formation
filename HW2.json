@@ -1,0 +1,78 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+
+
+    "Parameters": {
+        "vpccidr": {
+            "Description": "Select VPC CIdR",
+            "Type": "String",
+            "Default": "10.0.0.0/16"
+        },
+        "subnetcidr1": {
+            "Description": "Specify Subnet CIDR",
+            "Type": "String",
+            "Default": "10.0.0.0/24"
+        },
+        "subnetcidr2": {
+            "Description": "Specify Subnet CIDR",
+            "Type": "String",
+            "Default": "10.0.1.0/24"
+        }
+    },
+
+    "Mappings": {},
+    "Conditions": {},
+
+    "Resources": {
+        "TestVPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": {
+                    "Ref": "vpccidr"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "TestVPC"
+                    }
+                ]
+            }
+        },
+        "PubSN": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-east-1b",
+                "VpcId": {
+                    "Ref": "TestVPC"
+                },
+                "CidrBlock": { "Ref": "subnetcidr1" },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "PubSN"
+                    }
+                ]
+            }
+
+        },
+        "PrvtSN": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-east-1a",
+                "VpcId": {
+                    "Ref": "TestVPC"
+                },
+                "CidrBlock": { "Ref": "subnetcidr2" },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "PrvtSN"
+                    }
+                ]
+            }
+
+        }
+    },
+    "Outputs": {}
+}

@@ -1,0 +1,72 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+    },
+    "Mappings": {
+      "RegionAMI": {
+              "us-east-1": {
+                "ami": "ami-02e136e904f3da870"
+              },
+              "us-east-2": {
+                "ami": "ami-074cce78125f09d61"
+              },
+              "us-west-1": {
+                "ami": "ami-03ab7423a204da002"
+              }
+    }
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "appInstance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+            "ImageId": {"Fn::FindInMap": [
+                "RegionAMI",
+                { "Ref": "AWS::Region" },
+                "ami"
+            ]},
+            "InstanceType": "t2.micro",
+            "KeyName": "jjtech-nova-keypair",
+            "SubnetId" : {"Fn::ImportValue" : "Public-SN-ID"},
+            "SecurityGroupIds": {"Fn::ImportValue" : "PubSGID"},
+            "NetworkInterfaces" : [{
+                 "AssociatePublicIpAddress" : "True",
+                 "SubnetId" : { "Ref" : "PublicSubnet" }
+            }],
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "AppInstance"
+                }
+            ],
+            "UserData": {
+                "Fn::Base64": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "#!/bin/bash -ex",
+                            "-"
+                        ]
+                    ]
+                }
+            }
+    }
+            }
+
+
+    },
+    "Outputs": {
+      "InstanceIP" : {
+        "Value" : { "Fn::GetAtt" : [ "appInstance", "PrivateIp" ]}
+      }
+
+    }
+}

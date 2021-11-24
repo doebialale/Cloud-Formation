@@ -1,0 +1,62 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "An instance with maping and conditions",
+    "Metadata": {
+
+    },
+    "Parameters": {
+
+    },
+    "Mappings": {
+      "RegionAMI": {
+              "us-east-1": {
+                "ami": "ami-02e136e904f3da870",
+                "SG": "sg-0dcd72a4fc5211d3f"
+              },
+              "us-east-2": {
+                "ami": "ami-074cce78125f09d61",
+                "SG": "sg-0abd14c5d6efd00eb"
+              },
+              "us-west-1": {
+                "ami": "ami-03ab7423a204da002",
+                "SG": "sg-4bfcfe01"
+              },
+              "us-west-2": {
+                "ami": "ami-013a129d325529d4d",
+                "SG": "sg-5abd4c51"
+              }
+    }
+
+    },
+    "Conditions": {
+
+    },
+    "Resources": {
+      "GTInstance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+            "ImageId": {"Fn::FindInMap": [
+                "RegionAMI",
+                { "Ref": "AWS::Region" },
+                "ami"
+            ]},
+            "InstanceType": "t2.micro",
+            "SecurityGroupIds" : [{"Fn::FindInMap": [
+                "RegionAMI",
+                { "Ref": "AWS::Region" },
+                "SG"
+            ]}],
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "GTInstance"
+                }
+            ]
+    }
+            }
+
+    },
+    "Outputs": {
+
+    }
+}

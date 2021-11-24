@@ -1,0 +1,8 @@
+aws cloudformation create-stack --stack-name my-Network --template-body file://network.json --parameters ParameterKey=Az1,ParameterValue=us-east-1a ParameterKey=Az2,ParameterValue=us-east-1b --region us-east-1
+
+
+aws cloudformation describe-stack-events --stack-name my-Network
+
+aws cloudformation delete-stack --stack-name
+
+aws cloudformation get-template --stack-name
