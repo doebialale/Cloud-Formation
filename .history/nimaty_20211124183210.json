@@ -1,0 +1,34 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This is a network with One vpc, 4 subnet; 2 private, 2 public",
+  "Metadata": {},
+  "Parameters": {},
+  "Mappings": {},
+  "Conditions": {},
+  "Resources": {
+    "myVpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16"
+      }
+    },
+    
+    "subnetA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": 
+        { "Ref": "myVpc" }
+        ,
+        "CidrBlock": "10.0.0.0/24",
+        
+        "Tags":[
+        { "Key": "Name", "Value":  ""--"" }
+        ]
+      }
+    }
+    
+  },
+  "Outputs": {
+
+  }
+}
